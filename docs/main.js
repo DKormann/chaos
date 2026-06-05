@@ -91,14 +91,6 @@ var draw = () => {
 var inputMap = new Set;
 window.addEventListener("keydown", (e) => inputMap.add(e.key));
 window.addEventListener("keyup", (e) => inputMap.delete(e.key));
-window.addEventListener("click", (e) => {
-  inputMap.clear();
-  if (e.clientX < WIDTH / 2)
-    inputMap.add("ArrowLeft");
-  else
-    inputMap.add("ArrowRight");
-  console.log(e.clientX);
-});
 window.addEventListener("touchstart", (e) => {
   inputMap.clear();
   if (e.touches[0].clientX < WIDTH / 2)
