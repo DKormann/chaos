@@ -42,6 +42,7 @@ let dot = (x:number, y:number, color:string) => {
 let gameover = false;
 let score = 0;
 let highscore = Number(localStorage.getItem("highscore") || "0");
+let coinCtr = 0;
 
 let restart = () => {
   gameover = false;
@@ -49,6 +50,7 @@ let restart = () => {
   freeBall = {x: 0, y: 1};
   addBall(0);
   score = 0;
+  coinCtr = 3;
 }
 
 restart();
@@ -65,7 +67,31 @@ let draw = () => {
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
   chain.forEach((link, i) => dot(link.x, ballheight(i), ballcolor(i)));
 
-  dot(freeBall.x, lerp(ballheight(chain.length), HEIGHT, freeBall.y ), ballcolor(chain.length));
+  if (coinCtr == 3) dot(freeBall.x, lerp(ballheight(chain.length), HEIGHT, freeBall.y ), ballcolor(chain.length));
+  else {
+    ctx.beginPath();
+    // draw a little star
+    ctx.moveTo(freeBall.x + WIDTH / 2, HEIGHT - lerp(ballheight(chain.length), HEIGHT, freeBall.y ) );
+    [
+      {x: 0, y: 0},
+      {x: 5, y: 10},
+      {x: 15, y: 10},
+      {x: 7, y: 17},
+      {x: 8, y: 25},
+      {x: 0, y: 20},
+      {x: -8, y: 25},
+      {x: -7, y: 17},
+      {x: -15, y: 10},
+      {x: -5, y: 10},
+      {x: 0, y: 0},
+    ].forEach((offset, i) => {
+      console.log(offset);
+      ( ctx.lineTo)(freeBall.x + WIDTH / 2 + offset.x, HEIGHT - lerp(ballheight(chain.length), HEIGHT, freeBall.y ) + offset.y);
+    })
+    ctx.closePath();
+    ctx.fillStyle = "#0aceff";
+    ctx.fill();
+  }
 
   ctx.fillStyle = "black";
   ctx.font = "20px sans-serif";
@@ -79,12 +105,6 @@ let inputMap = new Set<string>();
 window.addEventListener("keydown", (e) => inputMap.add(e.key))
 window.addEventListener("keyup", (e) => inputMap.delete(e.key))
 
-// window.addEventListener("click", (e) => {
-//   inputMap.clear();
-//   if (e.clientX < WIDTH / 2) inputMap.add("ArrowLeft")
-//   else inputMap.add("ArrowRight");
-//   console.log(e.clientX)
-// })
 
 window.addEventListener("touchstart", (e) => {
   inputMap.clear();
@@ -120,6 +140,8 @@ const endGame = () => {
 
 let x = 0 as any as boolean;
 
+
+
 setInterval(() => {
 
   if (gameover) return;
@@ -131,10 +153,20 @@ setInterval(() => {
 
   freeBall.y -= 0.001;
   if (freeBall.y < 0) {
-    addBall(freeBall.x);
+    if (coinCtr == 3) {
+      addBall(freeBall.x);
+      coinCtr = 0;
+    }else{
+      coinCtr += 1;
+      if (Math.abs(freeBall.x - chain[chain.length-1].x) > 40){
+        endGame();
+      }
+      
+    }
     freeBall.y = 1;
     freeBall.x = (Math.random() - 0.5) * 200;
   }
+
 
   chain.slice(1).forEach((link, i) => {
     let prev = chain[i];
@@ -145,8 +177,6 @@ setInterval(() => {
     link.v *= 0.9;
     link.x += link.v;
   })
-
-
 
 
 }, 1000/FPS);
