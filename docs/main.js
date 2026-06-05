@@ -20,6 +20,7 @@ var fromHTML = (el) => ({
     return fromHTML(el);
   }
 });
+document.createElement;
 var html = (tag) => (...children) => fromHTML(document.createElement(tag)).append(...children);
 var div = html("div");
 var span = html("span");
@@ -29,59 +30,127 @@ var h1 = html("h1");
 var h2 = html("h2");
 var h3 = html("h3");
 var h4 = html("h4");
+var canvas = html("canvas");
 var button = html("button");
 
 // main.ts
 body.style({
-  backgroundColor: "#000",
-  padding: "20px",
-  color: "white",
-  fontFamily: "sans-serif"
+  backgroundColor: "gray"
 });
-var S = 500;
-var R = S / 2;
-var L = R * 0.8;
-var canvas = document.createElement("canvas");
-canvas.width = S;
-canvas.height = S;
-document.body.appendChild(canvas);
-var ctx = canvas.getContext("2d");
-var draw = (P1, P2) => {
-  let dot = (x, y, color) => {
-    ctx.beginPath();
-    ctx.rect(x, y, 5, 5);
-    ctx.fillStyle = color;
-    ctx.fill();
-  };
-  let snake = (H, c) => H.forEach((h, i) => {
-    dot(R + h, R * 2 - i, `hsl(${c}, 100%, 50%)`);
-  });
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  snake(H1, 0.1);
-  snake(H2, 200);
+var can = canvas();
+body.append(can);
+var WIDTH = 500;
+var HEIGHT = 700;
+can.el.width = WIDTH;
+can.el.height = HEIGHT;
+can.style({
+  position: "absolute",
+  left: "50%",
+  top: "50%",
+  transform: "translate(-50%, -50%)",
+  backgroundColor: "white"
+});
+var ctx = can.el.getContext("2d");
+ctx.textAlign = "center";
+var chain = [];
+var addBall = (x) => chain.push({ x, v: 0 });
+var freeBall;
+var dot = (x, y, color) => {
+  ctx.beginPath();
+  ctx.arc(x + WIDTH / 2, HEIGHT - y, 20, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
 };
-var H1 = [];
-var H2 = [];
-var f1 = R / 2;
-var f2 = Math.PI / 2;
-var a1 = 0;
-var a2 = 0;
-var increment = (d) => {
-  a1 -= (f1 - 0) * d;
-  a1 -= (f1 - f2) * d;
-  a2 -= (f2 - f1) * d;
-  a2 -= (f2 - 0) * d;
-  f1 += a1 * d;
-  f2 += a2 * d;
-  H1 = [...H1, f1].slice(-S);
-  H2 = [...H2, f2].slice(-S);
+var gameover = false;
+var score = 0;
+var highscore = Number(localStorage.getItem("highscore") || "0");
+var restart = () => {
+  gameover = false;
+  chain = [];
+  freeBall = { x: 0, y: 1 };
+  addBall(0);
+  score = 0;
 };
-var update = () => {
-  draw({ x: R + f1, y: L }, { x: R + f1 + f2, y: L });
-  requestAnimationFrame(update);
+restart();
+var lerp = (a, b, t) => a + (b - a) * t;
+var ballcolor = (i) => `hsl(${i * 15}, 100%, 50%)`;
+var ballheight = (i) => i * 50 + 50;
+var draw = () => {
+  if (gameover)
+    return requestAnimationFrame(draw);
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  chain.forEach((link, i) => dot(link.x, ballheight(i), ballcolor(i)));
+  dot(freeBall.x, lerp(ballheight(chain.length), HEIGHT, freeBall.y), ballcolor(chain.length));
+  ctx.fillStyle = "black";
+  ctx.font = "20px sans-serif";
+  ctx.fillText(`Score: ${score}`, WIDTH / 2, 50);
+  ctx.fillText(`Highscore: ${highscore}`, WIDTH / 2, 80);
+  requestAnimationFrame(draw);
 };
-update();
-var D = 400;
+var inputMap = new Set;
+window.addEventListener("keydown", (e) => inputMap.add(e.key));
+window.addEventListener("keyup", (e) => inputMap.delete(e.key));
+window.addEventListener("click", (e) => {
+  inputMap.clear();
+  if (e.clientX < WIDTH / 2)
+    inputMap.add("ArrowLeft");
+  else
+    inputMap.add("ArrowRight");
+  console.log(e.clientX);
+});
+window.addEventListener("touchstart", (e) => {
+  inputMap.clear();
+  if (e.touches[0].clientX < WIDTH / 2)
+    inputMap.add("ArrowLeft");
+  else
+    inputMap.add("ArrowRight");
+});
+window.addEventListener("touchend", (e) => {
+  inputMap.clear();
+});
+draw();
+var FPS = 60;
+var endGame = () => {
+  gameover = true;
+  if (score > highscore) {
+    highscore = score;
+    localStorage.setItem("highscore", String(highscore));
+  }
+  ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  ctx.fillStyle = "white";
+  ctx.font = "40px sans-serif";
+  ctx.fillText("Game Over", WIDTH / 2, HEIGHT / 2);
+  setTimeout(() => {
+    if (gameover)
+      restart();
+  }, 2000);
+};
 setInterval(() => {
-  increment(2 / D);
-}, 1000 / D);
+  if (gameover)
+    return;
+  score += 1;
+  let speed = 3;
+  if (inputMap.has("ArrowLeft"))
+    chain[0].x -= speed;
+  if (inputMap.has("ArrowRight"))
+    chain[0].x += speed;
+  freeBall.y -= 0.001;
+  if (freeBall.y < 0) {
+    addBall(freeBall.x);
+    freeBall.y = 1;
+    freeBall.x = (Math.random() - 0.5) * 200;
+  }
+  chain.slice(1).forEach((link, i) => {
+    let prev = chain[i];
+    let dx = prev.x - link.x;
+    if (Math.abs(link.x) > WIDTH / 2 - 20) {
+      endGame();
+    }
+    let force = -dx * 0.0006;
+    link.v += force;
+    link.v *= 0.9;
+    link.x += link.v;
+  });
+}, 1000 / FPS);

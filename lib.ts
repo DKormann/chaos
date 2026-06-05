@@ -1,14 +1,14 @@
 
 
-export type NODE = {
+export type NODE <H extends HTMLElement = HTMLElement> =  {
   $ : "NODE",
-  el: HTMLElement,
+  el: H,
   append: (...children: (NODE | string)[]) => NODE,
   style: (styles: Partial<CSSStyleDeclaration>) => NODE
   onclick: (handler: (event: MouseEvent) => void) => NODE
 }
 
-export const fromHTML = (el:HTMLElement): NODE => ({
+export const fromHTML  = <H extends HTMLElement>  (el:H): NODE <H> => ({
   $: "NODE",
   el,
   append: (...children:(NODE| string)[]) => {
@@ -29,7 +29,9 @@ export const fromHTML = (el:HTMLElement): NODE => ({
   }
 })
 
-const html = (tag:string) => (...children:(NODE|string)[]): NODE => fromHTML(document.createElement(tag)).append(...children);
+document.createElement
+
+const html = <K extends keyof HTMLElementTagNameMap> (tag:K) => (...children:(NODE|string)[]): NODE <HTMLElementTagNameMap[K]> => fromHTML (document.createElement(tag)).append(...children) as NODE <HTMLElementTagNameMap[K]>;
 
 export const div = html("div");
 export const span = html("span");
@@ -39,5 +41,7 @@ export const h1 = html("h1");
 export const h2 = html("h2");
 export const h3 = html("h3");
 export const h4 = html("h4");
+
+export const canvas = html("canvas");
 
 export const button = html("button");
