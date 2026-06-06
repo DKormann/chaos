@@ -1,6 +1,9 @@
 
 import { body, canvas } from "./lib";
 
+
+let version = "0"
+
 body.style({
   backgroundColor: "gray",
 })
@@ -30,7 +33,7 @@ ctx.textAlign = "center";
 let chain = [] as Link[];
 let addBall = (x: number) => chain.push({x, v: 0});
 
-let freeBall: {x: number, y: number};
+let freeBall: {x: number, y: number, type: {"star" : number} | "ball"};
 
 let dot = (x:number, y:number, color:string) => {
   ctx.beginPath();
@@ -41,16 +44,14 @@ let dot = (x:number, y:number, color:string) => {
 
 let gameover = false;
 let score = 0;
-let highscore = Number(localStorage.getItem("highscore") || "0");
-let coinCtr = 0;
+let highscore = Number(localStorage.getItem(version+ "highscore") || "0");
 
 let restart = () => {
   gameover = false;
   chain = [];
-  freeBall = {x: 0, y: 1};
+  freeBall = {x: 0, y: 1, type: "ball"};
   addBall(0);
   score = 0;
-  coinCtr = 3;
 }
 
 restart();
@@ -67,7 +68,7 @@ let draw = () => {
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
   chain.forEach((link, i) => dot(link.x, ballheight(i), ballcolor(i)));
 
-  if (coinCtr == 3) dot(freeBall.x, lerp(ballheight(chain.length), HEIGHT, freeBall.y ), ballcolor(chain.length));
+  if (freeBall.type == "ball") dot(freeBall.x, lerp(ballheight(chain.length), HEIGHT, freeBall.y ), ballcolor(chain.length));
   else {
     ctx.beginPath();
     // draw a little star
@@ -125,7 +126,7 @@ const endGame = () => {
   gameover = true;
   if (score > highscore) {
     highscore = score;
-    localStorage.setItem("highscore", String(highscore));
+    localStorage.setItem(version+"highscore", String(highscore));
   }
   ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
@@ -151,17 +152,16 @@ setInterval(() => {
   if (inputMap.has("ArrowLeft")) chain[0].x -= speed;
   if (inputMap.has("ArrowRight")) chain[0].x += speed;
 
-  freeBall.y -= 0.001;
+  freeBall.y -= 0.01;
   if (freeBall.y < 0) {
-    if (coinCtr == 3) {
+    if (freeBall.type  ==  "ball") {
+      freeBall.type = {"star" : chain.length};
       addBall(freeBall.x);
-      coinCtr = 0;
     }else{
-      coinCtr += 1;
-      if (Math.abs(freeBall.x - chain[chain.length-1].x) > 40){
-        endGame();
+      freeBall.type.star -= 1;
+      if (freeBall.type.star < 0) {
+        freeBall.type = "ball";
       }
-      
     }
     freeBall.y = 1;
     freeBall.x = (Math.random() - 0.5) * 200;
