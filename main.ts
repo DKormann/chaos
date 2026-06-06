@@ -2,7 +2,7 @@
 import { body, canvas } from "./lib";
 
 
-let version = "0"
+let version = "1"
 
 body.style({
   backgroundColor: "gray",
@@ -152,7 +152,7 @@ setInterval(() => {
   if (inputMap.has("ArrowLeft")) chain[0].x -= speed;
   if (inputMap.has("ArrowRight")) chain[0].x += speed;
 
-  freeBall.y -= 0.01;
+  freeBall.y -= 0.001;
   if (freeBall.y < 0) {
     if (freeBall.type  ==  "ball") {
       freeBall.type = {"star" : chain.length};

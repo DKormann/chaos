@@ -34,6 +34,7 @@ var canvas = html("canvas");
 var button = html("button");
 
 // main.ts
+var version = "1";
 body.style({
   backgroundColor: "gray"
 });
@@ -63,15 +64,13 @@ var dot = (x, y, color) => {
 };
 var gameover = false;
 var score = 0;
-var highscore = Number(localStorage.getItem("highscore") || "0");
-var coinCtr = 0;
+var highscore = Number(localStorage.getItem(version + "highscore") || "0");
 var restart = () => {
   gameover = false;
   chain = [];
-  freeBall = { x: 0, y: 1 };
+  freeBall = { x: 0, y: 1, type: "ball" };
   addBall(0);
   score = 0;
-  coinCtr = 3;
 };
 restart();
 var lerp = (a, b, t) => a + (b - a) * t;
@@ -83,7 +82,7 @@ var draw = () => {
   ctx.fillStyle = "white";
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
   chain.forEach((link, i) => dot(link.x, ballheight(i), ballcolor(i)));
-  if (coinCtr == 3)
+  if (freeBall.type == "ball")
     dot(freeBall.x, lerp(ballheight(chain.length), HEIGHT, freeBall.y), ballcolor(chain.length));
   else {
     ctx.beginPath();
@@ -133,7 +132,7 @@ var endGame = () => {
   gameover = true;
   if (score > highscore) {
     highscore = score;
-    localStorage.setItem("highscore", String(highscore));
+    localStorage.setItem(version + "highscore", String(highscore));
   }
   ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
@@ -156,13 +155,13 @@ setInterval(() => {
     chain[0].x += speed;
   freeBall.y -= 0.001;
   if (freeBall.y < 0) {
-    if (coinCtr == 3) {
+    if (freeBall.type == "ball") {
+      freeBall.type = { star: chain.length };
       addBall(freeBall.x);
-      coinCtr = 0;
     } else {
-      coinCtr += 1;
-      if (Math.abs(freeBall.x - chain[chain.length - 1].x) > 40) {
-        endGame();
+      freeBall.type.star -= 1;
+      if (freeBall.type.star < 0) {
+        freeBall.type = "ball";
       }
     }
     freeBall.y = 1;
